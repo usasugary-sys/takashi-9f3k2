@@ -116,6 +116,14 @@ button:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
 .cutin .cf .por{position:absolute;inset:0;width:100%;height:100%}
 .cutin .cb{background:#fff;color:var(--ink);font-weight:900;padding:5px 11px 6px;border-radius:12px;border:2.5px solid var(--ink);font-size:.95rem;line-height:1.25;white-space:nowrap}
 .cutin .cb small{display:block;font-size:.62rem;color:#6a6d7c}
+.band{position:absolute;left:0;right:0;top:36%;z-index:12;pointer-events:none;display:none}
+.band.on{display:block;animation:bandIn 1.05s cubic-bezier(.2,.9,.3,1) both}
+.band-in{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--bc,#ff8fc8);color:var(--ink);transform:skewY(-4deg);border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.band-face{width:84px;height:84px;border-radius:50%;background:#fff;border:4px solid var(--ink);overflow:hidden;flex:none;position:relative}
+.band-face .por{position:absolute;inset:0;width:100%;height:100%}
+.band-txt b{display:block;font-family:var(--logo);font-weight:400;font-size:1.9rem;line-height:1.1}
+.band-txt span{font-weight:900;font-size:1rem}
+@keyframes bandIn{0%{transform:translateX(-110%)}16%{transform:translateX(0)}84%{transform:translateX(0);opacity:1}100%{transform:translateX(110%);opacity:.6}}
 .hint-drag{position:absolute;left:0;right:0;bottom:12%;text-align:center;font-weight:900;font-size:.9rem;color:#fff;opacity:0;pointer-events:none;z-index:6;transition:opacity .4s}
 .hint-drag.on{opacity:.9}
 .hint-drag span{display:inline-block;background:rgba(21,22,29,.75);padding:8px 14px;border-radius:99px;border:2px solid rgba(255,255,255,.3)}
@@ -219,6 +227,7 @@ button:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
   <div class="cutin" id="cutin"><span class="cf" id="cutFace"></span><span class="cb"><small id="cutName"></small><span id="cutText"></span></span></div>
   <div class="hint-drag" id="hintDrag"><span>👆 左右にドラッグでハンドル</span></div>
   <div id="count"></div>
+  <div class="band" id="band"><div class="band-in"><span class="band-face" id="bandFace"></span><span class="band-txt"><b id="bandName"></b><span id="bandText"></span></span></div></div>
 </section>
 
 <section id="scr-result" class="screen">
@@ -370,6 +379,11 @@ const SFX={on:load('dr_sound',true),ctx:null,eng:null,
   boing(){this.tone(170,.18,'sine',.25,0,560);this.tone(560,.3,'sine',.2,.16,240);},
   horn(v=1){this.tone(440,.32,'square',.05*v);this.tone(554,.32,'square',.05*v);},
   tam(){[988,1319,1568,1319].forEach((f,i)=>this.tone(f,.16,'triangle',.07,i*.09));},
+  snore(){if(!this.on)return;const c=this.ac();if(!c)return;const t=c.currentTime,o=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();
+    o.type='sawtooth';o.frequency.setValueAtTime(58,t);o.frequency.linearRampToValueAtTime(74,t+.45);o.frequency.linearRampToValueAtTime(52,t+.9);
+    const l=c.createOscillator(),lg=c.createGain();l.frequency.value=22;lg.gain.value=18;l.connect(lg).connect(o.frequency);
+    f.type='lowpass';f.frequency.value=420;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.35);g.gain.linearRampToValueAtTime(.16,t+.6);g.gain.exponentialRampToValueAtTime(.0001,t+.95);
+    o.connect(f).connect(g).connect(c.destination);o.start(t);l.start(t);o.stop(t+1);l.stop(t+1);this.noise(.8,'bandpass',700,.08,.1);},
   wow(){[660,880,1100].forEach((f,i)=>this.tone(f,.14,'triangle',.08,i*.06));},
   engineStart(){if(!this.on||this.eng)return;const c=this.ac();if(!c)return;const o=c.createOscillator(),o2=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();
     o.type='sawtooth';o2.type='square';o2.detune.value=-1200;f.type='lowpass';f.frequency.value=520;g.gain.value=0;o.connect(f);o2.connect(f);f.connect(g).connect(c.destination);o.start();o2.start();
@@ -468,7 +482,7 @@ const G={state:'title',pl:null};
 function reset(){
   Object.assign(G,{t:0,speed:320,dist:0,score:0,hp:3,gauge:0,pending:-1,boost:0,inv:0,shrieks:0,nears:0,calls:0,combo:0,comboT:0,
     cars:[],decor:[],parts:[],pops:[],waves:[],cameos:[],spawnAcc:0,decorAcc:0,roadOff:0,shake:0,flash:0,hitstop:0,slow:0,
-    trioDone:false,nextCameo:2400,sportsOn:false,hintT:3.5,lineT:0,oils:[],drip:0,sp:[],ev:{mAt:R(1300,2800),mDone:false,endu:R(1000,1500),kando:R(500,800),hata:R(1800,2800)}});cutCD=0;$('#cutin').classList.remove('on');
+    trioDone:false,nextCameo:2400,sportsOn:false,hintT:3.5,lineT:0,oils:[],drip:0,slowT:0,sp:[],ev:{mAt:R(1300,2800),mDone:false,endu:R(1000,1500),kando:R(500,800),hata:R(1800,2800)}});cutCD=0;$('#cutin').classList.remove('on');
   G.pl={x:180,tx:180,y:VH*.8,w:34,h:60,tilt:0};
   for(let y=-40;y<VH+40;y+=90)spawnDecor(y);
 }
@@ -532,6 +546,7 @@ function hit(c){
 function update(dt){
   if(G.hitstop>0){G.hitstop-=dt;return;}
   if(G.slow>0){dt*=.25;}
+  if(G.slowT>0){G.slowT-=dt;dt*=.3;}
   const P=G.pl;G.t+=dt;
   const base=Math.min(980,380+G.t*12);G.speed=base*(G.boost>0?1.35:1);
   G.dist+=G.speed*.25/3.6*dt;G.score+=G.speed*.25/3.6*dt*.5;
@@ -602,6 +617,10 @@ const SPL={
  kando_in:['むにゃ…','ぐがー…','あと5分…'],kando_sleep:['ぐがー…','もう食べられない…','Zzz…','むにゃ…'],kando_hit:['ん…？','いたくない','…すや'],
  hata_in:['オラオラオラァ！','ハタ・チャン様のお通りだ！','ブレーキ？知らん！'],hata_rage:['どけぇ！','ヒャッハー！','ハンドルが勝手に！','右？左？両方だ！'],hata_out:['覚えてろー！','今日はこのへんにしといてやる'],
  tam_in:['はいはい、帰るよ〜']};
+let bandT=0;
+function bigCut(k,text,col){const b=$('#band');$('#bandFace').innerHTML=MINI[k];$('#bandName').textContent=SPN[k];$('#bandText').textContent=text;b.style.setProperty('--bc',col);
+  b.classList.remove('on');void b.offsetWidth;b.classList.add('on');clearTimeout(bandT);bandT=setTimeout(()=>b.classList.remove('on'),1100);}
+function hudH(){const h=document.querySelector('.hud');return h?h.getBoundingClientRect().height/scale:110;}
 function spCut(k,text,p=1){cutCD=0;cutinRaw(SPN[k],MINI[k],text,p);}
 function wreck(c,from,label){if(c.dead)return;c.dead=true;const s=Math.sign(c.x-from.x)||pick([-1,1]);c.vx=s*R(350,650);c.vy=R(-220,-40);c.spin=s*R(8,14);sparks(c.x,c.y,'#ffd23f',12,260);sparks(c.x,c.y,'#ff7a1a',6,180);if(label)popup(c.x,c.y-20,label,'#ffb020',15);SFX.noise(.3,'lowpass',700,.35,0,120);}
 function laneOf(x){return clamp(Math.floor((x-ROADL)/LW),0,3);}
@@ -617,7 +636,7 @@ function playerHit(o){
 function spawnMetsuki(){const pl=laneOf(G.pl.x);const l=pick([0,1,2,3].filter(x=>x!==pl));
   G.sp.push({k:'metsuki',x:laneX(l),y:VH+80,w:34,h:60,v:G.speed*1.3,ph:'pass',t:0,rot:0,side:laneX(l)<VW/2?-1:1});}
 function spawnEndu(){G.sp.push({k:'endu',x:laneX(laneOf(G.pl.x)),y:VH+90,w:32,h:62,ph:'warn',t:0});spCut('endu',pick(SPL.endu_in),1.1);SFX.tone(1200,.12,'square',.05);SFX.tone(1200,.12,'square',.05,.2);}
-function spawnKando(){const l=RI(0,2);G.sp.push({k:'kando',x:ROADL+LW*(l+1),y:-90,w:LW*2-10,h:84,t:0,hitDone:false,say:0,tam:Math.random()<.3?{ph:'wait',x:0,y:0,t:0}:null,sayT:pick(SPL.kando_sleep),sayCD:1.2});G.spawnAcc=-260;spCut('kando',pick(SPL.kando_in),.7);}
+function spawnKando(){const l=RI(0,2);G.decor.push({side:l<1?1:-1,y:-40,kind:'sign',text:'カンド注意',s:1.2});G.sp.push({k:'kando',ph:'warn',x:ROADL+LW*(l+1),y:-90,w:LW*2-10,h:84,t:0,hitDone:false,say:0,snoreCD:0,tam:Math.random()<.3?{ph:'wait',x:0,y:0,t:0}:null,sayT:pick(SPL.kando_sleep),sayCD:1.2});G.spawnAcc=-420;SFX.tone(660,.15,'triangle',.06);SFX.tone(660,.15,'triangle',.06,.25);}
 function spawnHata(){G.sp.push({k:'hata',x:VW/2,y:-80,w:34,h:60,t:0,ph:'rage',ox:R(0,6),hitCD:0,rot:0,say:0,sayT:'',sayCD:2.2});spCut('hata',pick(SPL.hata_in),1.3);G.spawnAcc=-200;SFX.horn();popup(VW/2,VH*.3,'ハタ・チャン出現！','#ff5bd1',22);}
 function specialEvents(){
   const E=G.ev,D=G.dist;
@@ -648,12 +667,19 @@ function updateSpecials(dt){
         if(o.y<-160)o.gone=true;}
     }
     else if(o.k==='kando'){
+      if(o.ph==='warn'){G.spawnAcc=Math.min(G.spawnAcc,-120);
+        if(!o.b1){o.b1=1;bigCut('kando',pick(['道で寝る','爆睡中','起きる気配なし']),'#ffd2a8');}
+        if(o.tam&&!o.b2&&o.t>1.05){o.b2=1;bigCut('tam','回収に来る','#ffb3d6');SFX.tam();}
+        if(o.t>(o.tam?2.15:1.7)){o.ph='on';o.t=0;}continue;}
+      if(!o.entered&&o.y>-10){o.entered=1;G.slowT=.55;SFX.snore();o.snoreCD=1.3;}
+      o.snoreCD-=dt;if(o.entered&&o.snoreCD<=0&&o.y<VH){o.snoreCD=1.35;SFX.snore();}
       o.y+=G.speed*dt;o.say-=dt;o.wob=Math.max(0,(o.wob||0)-dt*2);o.sayCD-=dt;if(o.sayCD<=0){o.sayCD=R(1.2,2);o.zz=1.1;o.sayT=pick(SPL.kando_sleep);}o.zz=(o.zz||0)-dt;
       const T=o.tam;
       if(T){
-        if(T.ph==='wait'&&o.y>VH*.16){T.ph='walk';T.side=o.x<VW/2?-1:1;T.x=T.side<0?10:VW-10;spCut('tam',pick(SPL.tam_in),1.3);}
-        if(T.ph==='walk'){T.y=o.y;const tx=o.x+T.side*(o.w/2+10);T.x+=(tx-T.x)*Math.min(1,dt*10);if(Math.abs(T.x-tx)<4){T.ph='grab';T.t=0;o.say=2;SFX.tam();spCut('tam','もうカンドったら♪',1.3);popup(o.x,o.y-60,'もうカンドったら♪','#ff8fc8',17);}}
-        if(T.ph==='grab'){T.t+=dt;T.y=o.y;if(T.t>.2){const tx=T.side<0?-90:VW+90;o.x+=(tx-o.x)*Math.min(1,dt*3.2);T.x=o.x+T.side*(o.w/2+10);if(o.x<-70||o.x>VW+70)o.gone=true;}}
+        if(T.ph==='wait'&&o.entered){T.ph='walk';T.side=o.x<VW/2?-1:1;T.x=T.side<0?-14:VW+14;T.say=1.8;T.sayT=pick(SPL.tam_in);}
+        T.say=(T.say||0)-dt;T.ht=(T.ht||0)-dt;
+        if(T.ph==='walk'){T.y=o.y;const tx=o.x+T.side*(o.w/2+10);const st=Math.sign(tx-T.x)*Math.min(Math.abs(tx-T.x),110*dt);T.x+=st;if(Math.random()<dt*20)G.parts.push({x:T.x,y:T.y+16,vx:-Math.sign(st)*R(20,60),vy:R(-20,20),life:.4,col:'rgba(220,210,190,.7)',sz:R(3,5)});if(Math.abs(T.x-tx)<3){T.ph='grab';T.t=0;o.say=2.4;G.slowT=.6;SFX.tam();spCut('tam','もうカンドったら♪',1.3);popup(o.x,o.y-60,'もうカンドったら♪','#ff8fc8',18);}}
+        if(T.ph==='grab'){T.t+=dt;T.y=o.y;if(T.ht<=0){T.ht=.12;G.pops.push({x:T.x+R(-14,14),y:T.y-20,text:'♥',color:'#ff5b9e',size:R(12,18),life:.8});}if(T.t>.35){const tx=T.side<0?-90:VW+90;o.x+=Math.sign(tx-o.x)*Math.min(Math.abs(tx-o.x),(60+T.t*140)*dt);T.x=o.x+T.side*(o.w/2+10);if(o.x<-70||o.x>VW+70)o.gone=true;}}
       }
       if(!o.hitDone&&spHit(o,o.w,o.h-10)){o.hitDone=true;o.wob=1;o.zz=1.3;o.sayT=pick(SPL.kando_hit);o.sayCD=2;popup(o.x,o.y-30,'ボヨン','#ffd2e0',24);SFX.boing();if(playerHit(o))return;}
     }
@@ -692,11 +718,16 @@ function drawKando(o){
   const T=o.tam;if(T&&T.ph!=='wait'){const x=T.x,y=T.y;ctx.fillStyle='#ff8fc8';ctx.strokeStyle=INK;ctx.lineWidth=2;rr(x-8,y-2,16,20,5);ctx.fill();ctx.stroke();
     ctx.fillStyle='#f5cfa8';ctx.beginPath();ctx.arc(x,y-10,9,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#4a2a1a';ctx.beginPath();ctx.arc(x,y-19,5,0,7);ctx.fill();
     ctx.fillStyle=INK;ctx.beginPath();ctx.arc(x-3,y-10,1.5,0,7);ctx.arc(x+3,y-10,1.5,0,7);ctx.fill();
-    nameTag(x,y+28,'タム','rgba(200,60,130,.9)');if(o.say>0)speech(clamp(x,70,VW-70),y-38,'もうカンドったら♪');}
+    nameTag(x,y+28,'タム','rgba(200,60,130,.9)');if(o.say>0)speech(clamp(x,70,VW-70),y-38,'もうカンドったら♪');else if(T.say>0)speech(clamp(x,70,VW-70),y-38,T.sayT);}
 }
 function drawSpecials(layer){
   for(const o of G.sp){
-    if(layer==='ground'){if(o.k==='kando')drawKando(o);continue;}
+    if(layer==='ground'){if(o.k==='kando'&&o.ph!=='warn')drawKando(o);continue;}
+    if(o.k==='kando'&&o.ph==='warn'){const top=hudH()+6,on=(o.t*6|0)%2;
+      ctx.fillStyle='rgba(255,122,26,.16)';ctx.fillRect(o.x-o.w/2,top,o.w,VH*.45);
+      if(on){ctx.fillStyle='#ff7a1a';for(const dx of[-LW/2,LW/2]){const ax=o.x+dx;ctx.beginPath();ctx.moveTo(ax-14,top+10);ctx.lineTo(ax+14,top+10);ctx.lineTo(ax,top+30);ctx.closePath();ctx.fill();}}
+      ctx.font='900 15px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const tt='この先 カンド 寝てます';const w=ctx.measureText(tt).width+22;
+      ctx.fillStyle=on?'#ff7a1a':'#fff';ctx.strokeStyle=INK;ctx.lineWidth=3;rr(VW/2-w/2,top+38,w,28,9);ctx.fill();ctx.stroke();ctx.fillStyle=on?'#fff':INK;ctx.fillText(tt,VW/2,top+52);continue;}
     if(o.k==='metsuki'){drawCar({x:o.x,y:o.y,w:o.w,h:o.h,col:['#2e323d','#454b5a'],rot:o.rot,type:'car'},false);
       ctx.fillStyle='#1d1f27';ctx.beginPath();ctx.arc(o.x,o.y-2,6.5,0,7);ctx.fill();nameTag(o.x,o.y-o.h/2-12,'目つきの悪いやつ');if(o.ph==='stop')speech(o.x,o.y-o.h/2-34,'……');}
     else if(o.k==='endu'){
