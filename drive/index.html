@@ -491,7 +491,7 @@ function spawnRow(){
     if(!G.sportsOn&&t>8&&r<.07)type='sports';else if(r<.2)type='truck';
     const col=type==='sports'?['#e8322f','#ff5b58']:pick(CARCOL);
     const c={type,x:laneX(l),lane:l,w:type==='truck'?40:type==='sports'?32:34,h:type==='truck'?98:type==='sports'?58:60,col,rot:0,alpha:1,passed:false,dead:false,near:0,credited:false};
-    c.y=-c.h;c.v=G.speed*(type==='sports'?.86:type==='truck'?R(.38,.44):R(.45,.58));
+    c.y=-c.h;c.v=G.speed*(type==='sports'?.86:type==='truck'?R(.38,.44):R(.45,.58));c.v0=c.v;
     if(type==='sports')G.sportsOn=true;
     if(t>15&&type!=='sports'&&Math.random()<.3){const to=l===0?1:l===3?2:l+pick([-1,1]);c.lc={to,at:R(60,VH*.42),bt:0};}
     G.cars.push(c);
@@ -546,7 +546,7 @@ function update(dt){
     const py=c.y;
     if(c.dead){c.x+=c.vx*dt;c.y+=(c.vy+G.speed*.6)*dt;c.rot+=c.spin*dt;c.alpha-=dt*.9;continue;}
     c.y+=(G.speed-c.v)*dt;
-    if(c.lc&&c.y>c.lc.at){c.lc.bt+=dt;if(c.lc.bt>.6){const tx=laneX(c.lc.to);c.x+=(tx-c.x)*Math.min(1,dt*4);if(Math.abs(tx-c.x)<1){c.x=tx;c.lc=null;}}}
+    if(c.lc&&c.y>c.lc.at){c.lc.bt+=dt;if(c.lc.bt>.55&&!c.lc.go){const tx=laneX(c.lc.to);const blocked=G.cars.some(q=>q!==c&&!q.dead&&Math.abs(q.x-tx)<LW*.7&&Math.abs(q.y-c.y)<(q.h+c.h)/2+34)||G.sp.some(q=>q.k==='kando'&&Math.abs(q.x-tx)<q.w/2+c.w/2&&Math.abs(q.y-c.y)<(q.h+c.h)/2+40);if(blocked)c.lc=null;else c.lc.go=1;}if(c.lc&&c.lc.go){const tx=laneX(c.lc.to);c.x+=(tx-c.x)*Math.min(1,dt*4);if(Math.abs(tx-c.x)<1){c.x=tx;c.lc=null;}}}
     const dx=Math.abs(c.x-P.x),ox=(c.w+P.w)/2-5,oy=(c.h+P.h)/2-6;
     if(dx<ox&&Math.abs(c.y-P.y)<oy){if(G.boost>0){blast(c,P);SFX.crash();G.shake=10;}else if(G.inv<=0){hit(c);if(G.state!=='play')return;}}
     if(!c.passed&&py<P.y&&c.y>=P.y){c.passed=true;const gap=dx-(c.w+P.w)/2;
@@ -554,6 +554,13 @@ function update(dt){
         popup((c.x+P.x)/2,P.y-40,G.combo>1?`ギリッ! ×${G.combo}`:'ギリッ!','#fff',G.combo>1?20:17);SFX.near();buzz(12);if(G.combo>=3&&G.combo%3===0)(Math.random()<.5?cutin(1,'ぴゅっぴゅ！'):cutin(0,'ポロン'));else if(Math.random()<.35)tkSay(pick(TKL.near));}}
     if(c.type==='sports'&&!c.credited&&Math.abs(c.y-P.y)<90&&dx<120){c.near+=dt;if(c.near>.5){c.credited=true;G.gauge=Math.min(100,G.gauge+32);G.score+=300;popup(c.x,c.y-40,'大興奮 +300','#ff5b58',18);tkSay(pick(TKL.sports));SFX.wow();}}
   }
+  // keep traffic from overlapping: follow the car ahead, queue behind a sleeping Kando
+  {const live=G.cars.filter(c=>!c.dead);
+   for(const b of live){b.v+=((b.v0||b.v)-b.v)*Math.min(1,dt*.8);
+     for(const a of live){if(a===b||a.y>=b.y||Math.abs(a.x-b.x)>(a.w+b.w)/2-2)continue;const gap=(b.y-b.h/2)-(a.y+a.h/2);
+       if(gap<18){b.v=Math.min(b.v,a.v);if(gap<3)b.y=a.y+(a.h+b.h)/2+3;}}
+     for(const k of G.sp){if(k.k!=='kando'||k.y>=b.y||Math.abs(k.x-b.x)>(k.w+b.w)/2-6)continue;const gap=(b.y-b.h/2)-(k.y+k.h/2);
+       if(gap<18){b.v=0;if(gap<3)b.y=k.y+(k.h+b.h)/2+3;}}}}
   G.cars=G.cars.filter(c=>{const keep=c.y<VH+140&&c.alpha>0;if(!keep&&c.type==='sports')G.sportsOn=false;return keep;});
   // waves
   for(const w of G.waves){w.r+=900*dt;for(const c of G.cars){if(!c.dead&&Math.hypot(c.x-w.x,c.y-w.y)<w.r)blast(c,w);}for(const o of G.sp){if(o.k==='hata'&&Math.hypot(o.x-w.x,o.y-w.y)<w.r)blowHata(o);if(o.k==='kando'&&Math.hypot(o.x-w.x,o.y-w.y)<w.r)o.wob=1;}}
@@ -583,6 +590,20 @@ function update(dt){
 }
 
 /* ---------- specials ---------- */
+const K='#15161d';
+const MINI={
+ endu:`<svg class="por" viewBox="0 0 100 100"><circle cx="50" cy="56" r="30" fill="#f5cfa8" stroke="${K}" stroke-width="3"/><path d="M19 52 Q20 16 52 16 Q82 18 83 48 Q70 30 50 32 Q33 32 19 52Z" fill="${K}"/><rect x="27" y="48" width="19" height="11" rx="3" fill="${K}"/><rect x="54" y="48" width="19" height="11" rx="3" fill="${K}"/><path d="M46 52 h8" stroke="${K}" stroke-width="3"/><path d="M30 50 l6 -1" stroke="#7dffb0" stroke-width="2"/><path d="M36 70 Q52 80 66 67" stroke="${K}" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg>`,
+ kando:`<svg class="por" viewBox="0 0 100 100"><ellipse cx="50" cy="60" rx="40" ry="35" fill="#f5cfa8" stroke="${K}" stroke-width="3"/><path d="M42 26 q8 -10 14 0" stroke="${K}" stroke-width="3" fill="none"/><path d="M28 58 q7 6 14 0 M58 58 q7 6 14 0" stroke="${K}" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="24" cy="70" rx="7" ry="4" fill="#ff9aa8" opacity=".6"/><ellipse cx="76" cy="70" rx="7" ry="4" fill="#ff9aa8" opacity=".6"/><ellipse cx="50" cy="78" rx="5" ry="6" fill="#7a1d2b"/><path d="M57 80 q3 8 0 12" stroke="#8fd3ff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+ hata:`<svg class="por" viewBox="0 0 100 100"><circle cx="50" cy="57" r="30" fill="#f5cfa8" stroke="${K}" stroke-width="3"/><path d="M20 46 L24 14 L34 30 L40 8 L50 28 L58 6 L64 28 L74 12 L78 34 L84 22 L80 48 Z" fill="${K}"/><rect x="19" y="38" width="62" height="9" rx="3" fill="#ff5bd1" stroke="${K}" stroke-width="2.5"/><circle cx="38" cy="58" r="8" fill="#fff" stroke="${K}" stroke-width="2.5"/><circle cx="62" cy="58" r="8" fill="#fff" stroke="${K}" stroke-width="2.5"/><circle cx="40" cy="56" r="2.2" fill="${K}"/><circle cx="60" cy="60" r="2.2" fill="${K}"/><ellipse cx="50" cy="76" rx="10" ry="8" fill="#7a1d2b" stroke="${K}" stroke-width="2.5"/><path d="M42 72 h16" stroke="#fff" stroke-width="3"/></svg>`,
+ tam:`<svg class="por" viewBox="0 0 100 100"><circle cx="50" cy="20" r="11" fill="#4a2a1a" stroke="${K}" stroke-width="3"/><circle cx="50" cy="56" r="30" fill="#f5cfa8" stroke="${K}" stroke-width="3"/><path d="M20 54 Q20 26 50 26 Q80 26 80 54 Q72 38 50 38 Q30 38 20 54Z" fill="#4a2a1a"/><path d="M33 58 q5 -6 10 0 M57 58 q5 -6 10 0" stroke="${K}" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="30" cy="68" rx="6" ry="3.5" fill="#ff8fb8" opacity=".7"/><ellipse cx="70" cy="68" rx="6" ry="3.5" fill="#ff8fb8" opacity=".7"/><path d="M40 72 Q50 81 60 72" stroke="${K}" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`};
+const SPN={endu:'エンドゥ',kando:'カンド',hata:'ハタ・チャン',tam:'タム'};
+const SPL={
+ endu_in:['どけどけー！','お先ぃ！','遅ぇよ、たかし'],endu_out:['じゃあな','ついてこれるか？','ぬるい'],
+ kando_in:['むにゃ…','ぐがー…','あと5分…'],kando_sleep:['ぐがー…','もう食べられない…','Zzz…','むにゃ…'],kando_hit:['ん…？','いたくない','…すや'],
+ hata_in:['オラオラオラァ！','ハタ・チャン様のお通りだ！','ブレーキ？知らん！'],hata_rage:['どけぇ！','ヒャッハー！','ハンドルが勝手に！','右？左？両方だ！'],hata_out:['覚えてろー！','今日はこのへんにしといてやる'],
+ tam_in:['はいはい、帰るよ〜']};
+function spCut(k,text,p=1){cutCD=0;cutinRaw(SPN[k],MINI[k],text,p);}
+function wreck(c,from,label){if(c.dead)return;c.dead=true;const s=Math.sign(c.x-from.x)||pick([-1,1]);c.vx=s*R(350,650);c.vy=R(-220,-40);c.spin=s*R(8,14);sparks(c.x,c.y,'#ffd23f',12,260);sparks(c.x,c.y,'#ff7a1a',6,180);if(label)popup(c.x,c.y-20,label,'#ffb020',15);SFX.noise(.3,'lowpass',700,.35,0,120);}
 function laneOf(x){return clamp(Math.floor((x-ROADL)/LW),0,3);}
 function spHit(o,w,h){const P=G.pl;return Math.abs(o.x-P.x)<(w+P.w)/2-5&&Math.abs(o.y-P.y)<(h+P.h)/2-6;}
 function playerHit(o){
@@ -595,15 +616,15 @@ function playerHit(o){
 }
 function spawnMetsuki(){const pl=laneOf(G.pl.x);const l=pick([0,1,2,3].filter(x=>x!==pl));
   G.sp.push({k:'metsuki',x:laneX(l),y:VH+80,w:34,h:60,v:G.speed*1.3,ph:'pass',t:0,rot:0,side:laneX(l)<VW/2?-1:1});}
-function spawnEndu(){G.sp.push({k:'endu',x:laneX(laneOf(G.pl.x)),y:VH+90,w:32,h:62,ph:'warn',t:0});SFX.tone(1200,.12,'square',.05);SFX.tone(1200,.12,'square',.05,.2);}
-function spawnKando(){const l=RI(0,2);G.sp.push({k:'kando',x:ROADL+LW*(l+1),y:-90,w:LW*2-10,h:84,t:0,hitDone:false,say:0,tam:Math.random()<.3?{ph:'wait',x:0,y:0,t:0}:null});G.spawnAcc=-260;}
-function spawnHata(){G.sp.push({k:'hata',x:VW/2,y:-80,w:34,h:60,t:0,ph:'rage',ox:R(0,6),hitCD:0,rot:0});G.spawnAcc=-200;SFX.horn();popup(VW/2,VH*.3,'ハタ・チャン出現！','#ff5bd1',22);}
+function spawnEndu(){G.sp.push({k:'endu',x:laneX(laneOf(G.pl.x)),y:VH+90,w:32,h:62,ph:'warn',t:0});spCut('endu',pick(SPL.endu_in),1.1);SFX.tone(1200,.12,'square',.05);SFX.tone(1200,.12,'square',.05,.2);}
+function spawnKando(){const l=RI(0,2);G.sp.push({k:'kando',x:ROADL+LW*(l+1),y:-90,w:LW*2-10,h:84,t:0,hitDone:false,say:0,tam:Math.random()<.3?{ph:'wait',x:0,y:0,t:0}:null,sayT:pick(SPL.kando_sleep),sayCD:1.2});G.spawnAcc=-260;spCut('kando',pick(SPL.kando_in),.7);}
+function spawnHata(){G.sp.push({k:'hata',x:VW/2,y:-80,w:34,h:60,t:0,ph:'rage',ox:R(0,6),hitCD:0,rot:0,say:0,sayT:'',sayCD:2.2});spCut('hata',pick(SPL.hata_in),1.3);G.spawnAcc=-200;SFX.horn();popup(VW/2,VH*.3,'ハタ・チャン出現！','#ff5bd1',22);}
 function specialEvents(){
   const E=G.ev,D=G.dist;
   if(!E.mDone&&D>=E.mAt){E.mDone=true;spawnMetsuki();}
   if(D>=E.endu){E.endu=D+R(1100,1800);spawnEndu();}
-  if(D>=E.kando){E.kando=D+R(1200,2000);if(!G.sp.some(o=>o.k==='kando'))spawnKando();}
-  if(D>=E.hata){E.hata=D+R(1800,3000);if(Math.random()<.55&&!G.sp.some(o=>o.k==='hata'))spawnHata();}
+  if(D>=E.kando){if(G.sp.some(o=>o.k==='hata'||o.k==='kando'))E.kando=D+150;else{E.kando=D+R(1200,2000);spawnKando();}}
+  if(D>=E.hata){if(G.sp.some(o=>o.k==='hata'||o.k==='kando'))E.hata=D+150;else{E.hata=D+R(1800,3000);if(Math.random()<.55)spawnHata();}}
 }
 function updateSpecials(dt){
   const P=G.pl;
@@ -617,35 +638,40 @@ function updateSpecials(dt){
       else o.y+=G.speed*dt;
     }
     else if(o.k==='endu'){
+      o.say=(o.say||0)-dt;
       if(o.ph==='warn'){if(o.t>1.15){o.ph='go';SFX.zoom();}}
       else{o.y-=G.speed*1.35*dt;G.parts.push({x:o.x+R(-8,8),y:o.y+o.h/2,vx:0,vy:R(200,400),life:.25,col:pick(['#7dffb0','#fff']),sz:R(2,3)});
+        for(const c of G.cars){if(!c.dead&&Math.abs(c.x-o.x)<(c.w+o.w)/2&&Math.abs(c.y-o.y)<(c.h+o.h)/2)wreck(c,o,'大破');}
+        for(const q of G.sp){if(q.k==='kando'&&Math.abs(q.x-o.x)<(q.w+o.w)/2&&Math.abs(q.y-o.y)<(q.h+o.h)/2)q.wob=1;}
         if(!o.hit&&spHit(o,o.w,o.h)){o.hit=true;if(playerHit(o))return;}
-        if(!o.said&&o.y<P.y-50){o.said=true;popup(o.x,P.y-80,'ぶっちぎり！','#7dffb0',20);}
+        if(!o.said&&o.y<P.y-50){o.said=true;o.say=1.4;o.sayT=pick(SPL.endu_out);popup(o.x,P.y-80,'ぶっちぎり！','#7dffb0',20);}
         if(o.y<-160)o.gone=true;}
     }
     else if(o.k==='kando'){
-      o.y+=G.speed*dt;o.say-=dt;o.wob=Math.max(0,(o.wob||0)-dt*2);
+      o.y+=G.speed*dt;o.say-=dt;o.wob=Math.max(0,(o.wob||0)-dt*2);o.sayCD-=dt;if(o.sayCD<=0){o.sayCD=R(1.2,2);o.zz=1.1;o.sayT=pick(SPL.kando_sleep);}o.zz=(o.zz||0)-dt;
       const T=o.tam;
       if(T){
-        if(T.ph==='wait'&&o.y>VH*.16){T.ph='walk';T.side=o.x<VW/2?-1:1;T.x=T.side<0?10:VW-10;}
-        if(T.ph==='walk'){T.y=o.y;const tx=o.x+T.side*(o.w/2+10);T.x+=(tx-T.x)*Math.min(1,dt*10);if(Math.abs(T.x-tx)<4){T.ph='grab';T.t=0;o.say=2;SFX.tam();popup(o.x,o.y-60,'もうカンドったら♪','#ff8fc8',17);}}
+        if(T.ph==='wait'&&o.y>VH*.16){T.ph='walk';T.side=o.x<VW/2?-1:1;T.x=T.side<0?10:VW-10;spCut('tam',pick(SPL.tam_in),1.3);}
+        if(T.ph==='walk'){T.y=o.y;const tx=o.x+T.side*(o.w/2+10);T.x+=(tx-T.x)*Math.min(1,dt*10);if(Math.abs(T.x-tx)<4){T.ph='grab';T.t=0;o.say=2;SFX.tam();spCut('tam','もうカンドったら♪',1.3);popup(o.x,o.y-60,'もうカンドったら♪','#ff8fc8',17);}}
         if(T.ph==='grab'){T.t+=dt;T.y=o.y;if(T.t>.2){const tx=T.side<0?-90:VW+90;o.x+=(tx-o.x)*Math.min(1,dt*3.2);T.x=o.x+T.side*(o.w/2+10);if(o.x<-70||o.x>VW+70)o.gone=true;}}
       }
-      if(!o.hitDone&&spHit(o,o.w,o.h-10)){o.hitDone=true;o.wob=1;popup(o.x,o.y-30,'ボヨン','#ffd2e0',24);SFX.boing();if(playerHit(o))return;}
+      if(!o.hitDone&&spHit(o,o.w,o.h-10)){o.hitDone=true;o.wob=1;o.zz=1.3;o.sayT=pick(SPL.kando_hit);o.sayCD=2;popup(o.x,o.y-30,'ボヨン','#ffd2e0',24);SFX.boing();if(playerHit(o))return;}
     }
     else if(o.k==='hata'){
       if(o.ph==='rage'){o.v=G.speed*(.86+.32*Math.sin(o.t*1.4));o.y=Math.min(VH*.74,o.y+(G.speed-o.v)*dt+(o.y<VH*.28?G.speed*.6*dt:0));
         o.x=clamp(ROADL+ROADW/2+Math.sin(o.t*2.1+o.ox)*105+Math.sin(o.t*5.7)*22,ROADL+o.w/2,ROADL+ROADW-o.w/2);o.rot=Math.cos(o.t*2.1+o.ox)*.38;
         if(Math.random()<dt*.8)SFX.horn(.5);if(Math.random()<dt*6)G.parts.push({x:o.x,y:o.y+o.h/2,vx:R(-30,30),vy:R(80,160),life:.6,col:'rgba(200,200,210,.7)',sz:R(4,7)});
-        if(o.t>7.5)o.ph='leave';}
+        o.sayCD-=dt;if(o.sayCD<=0){o.sayCD=R(1.8,2.6);o.say=1.2;o.sayT=pick(SPL.hata_rage);}
+        for(const c of G.cars){if(!c.dead&&Math.abs(c.x-o.x)<(c.w+o.w)/2-4&&Math.abs(c.y-o.y)<(c.h+o.h)/2-4)wreck(c,o,'ドカッ');}
+        if(o.t>7.5){o.ph='leave';o.say=1.6;o.sayT=pick(SPL.hata_out);}}
       else if(o.ph==='leave'){o.y-=G.speed*.7*dt;o.rot=Math.sin(o.t*8)*.2;if(o.y<-140)o.gone=true;}
       else{o.x+=o.vx*dt;o.y+=(o.vy+G.speed*.5)*dt;o.rot+=o.spin*dt;o.alpha=(o.alpha??1)-dt;if(o.alpha<=0)o.gone=true;}
-      o.hitCD-=dt;if(o.ph!=='blown'&&o.hitCD<=0&&spHit(o,o.w,o.h)){o.hitCD=1.5;if(G.boost>0)blowHata(o);else if(playerHit(o))return;}
+      o.say-=dt;o.hitCD-=dt;if(o.ph!=='blown'&&o.hitCD<=0&&spHit(o,o.w,o.h)){o.hitCD=1.5;if(G.boost>0)blowHata(o);else if(playerHit(o))return;}
     }
   }
   G.sp=G.sp.filter(o=>!o.gone&&o.y<VH+170);
 }
-function blowHata(o){if(o.ph==='blown')return;o.ph='blown';const s=Math.sign(o.x-G.pl.x)||1;o.vx=s*600;o.vy=-200;o.spin=s*12;G.score+=500;popup(o.x,o.y,'ハタ・チャン退場 +500','#ff5bd1',17);SFX.crash();}
+function blowHata(o){if(o.ph==='blown')return;o.ph='blown';spCut('hata','覚えてろー！',1.3);const s=Math.sign(o.x-G.pl.x)||1;o.vx=s*600;o.vy=-200;o.spin=s*12;G.score+=500;popup(o.x,o.y,'ハタ・チャン退場 +500','#ff5bd1',17);SFX.crash();}
 function nameTag(x,y,t,bg='rgba(21,22,29,.85)'){ctx.font='900 9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(t).width+10;ctx.fillStyle=bg;rr(x-w/2,y-7,w,14,5);ctx.fill();ctx.fillStyle='#fff';ctx.fillText(t,x,y);}
 function speech(x,y,t){ctx.font='900 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(t).width+14;ctx.fillStyle='#fff';ctx.strokeStyle=INK;ctx.lineWidth=2;rr(x-w/2,y-11,w,22,8);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x-4,y+10);ctx.lineTo(x,y+17);ctx.lineTo(x+4,y+10);ctx.fill();ctx.fillStyle=INK;ctx.fillText(t,x,y);}
 function drawKando(o){
@@ -662,7 +688,7 @@ function drawKando(o){
   ctx.restore();
   ctx.fillStyle='#fff';ctx.font='900 13px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';
   for(let i=0;i<3;i++){const ph=(G.t*.8+i/3)%1;ctx.globalAlpha=1-ph;ctx.fillText('Z',o.x-o.w/2+20+ph*20+i*6,o.y-o.h/2-4-ph*26);}ctx.globalAlpha=1;
-  nameTag(o.x,o.y+o.h/2+10,'カンド');
+  nameTag(o.x,o.y+o.h/2+10,'カンド');if(o.zz>0&&!(o.tam&&o.say>0))speech(clamp(o.x+10,60,VW-60),o.y-o.h/2-26,o.sayT);
   const T=o.tam;if(T&&T.ph!=='wait'){const x=T.x,y=T.y;ctx.fillStyle='#ff8fc8';ctx.strokeStyle=INK;ctx.lineWidth=2;rr(x-8,y-2,16,20,5);ctx.fill();ctx.stroke();
     ctx.fillStyle='#f5cfa8';ctx.beginPath();ctx.arc(x,y-10,9,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#4a2a1a';ctx.beginPath();ctx.arc(x,y-19,5,0,7);ctx.fill();
     ctx.fillStyle=INK;ctx.beginPath();ctx.arc(x-3,y-10,1.5,0,7);ctx.arc(x+3,y-10,1.5,0,7);ctx.fill();
@@ -678,11 +704,11 @@ function drawSpecials(layer){
         nameTag(o.x,VH-30,'後ろからエンドゥ！','rgba(255,48,68,.9)');}
       else{ctx.fillStyle='rgba(125,255,176,.35)';ctx.fillRect(o.x-o.w/2+4,o.y+o.h/2,o.w-8,90);
         ctx.save();ctx.shadowColor='#7dffb0';ctx.shadowBlur=18;drawCar({x:o.x,y:o.y,w:o.w,h:o.h,col:['#15161d','#2a2d3a'],rot:0,type:'sports'},false);ctx.restore();
-        ctx.fillStyle='#7dffb0';ctx.fillRect(o.x-2,o.y-o.h/2+3,4,o.h-6);nameTag(o.x,o.y+o.h/2+12,'エンドゥ','rgba(20,120,70,.9)');}
+        ctx.fillStyle='#7dffb0';ctx.fillRect(o.x-2,o.y-o.h/2+3,4,o.h-6);nameTag(o.x,o.y+o.h/2+12,'エンドゥ','rgba(20,120,70,.9)');if(o.say>0)speech(clamp(o.x,60,VW-60),o.y-o.h/2-18,o.sayT);}
     }
     else if(o.k==='hata'){ctx.globalAlpha=Math.max(0,o.alpha??1);drawCar({x:o.x,y:o.y,w:o.w,h:o.h,col:['#ffe14d','#fff08a'],rot:o.rot,type:'sports'},false);
       ctx.fillStyle='#ff5bd1';ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);ctx.fillRect(-o.w/2+2,-6,o.w-4,5);ctx.restore();
-      nameTag(o.x,o.y-o.h/2-12,'ハタ・チャン','rgba(210,40,160,.9)');
+      nameTag(o.x,o.y-o.h/2-12,'ハタ・チャン','rgba(210,40,160,.9)');if(o.say>0&&o.ph!=='blown')speech(clamp(o.x,70,VW-70),o.y-o.h/2-36,o.sayT);
       if(o.ph==='rage'&&(o.t*3|0)%2){ctx.fillStyle='#ff3044';ctx.font='900 16px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.fillText('!!',o.x+o.w/2+10,o.y-o.h/2);}
       ctx.globalAlpha=1;}
   }
