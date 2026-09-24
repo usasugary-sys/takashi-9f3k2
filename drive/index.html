@@ -89,6 +89,8 @@ button:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
 .hud-mid{display:flex;align-items:center;gap:10px;margin-top:8px}
 .hp{display:flex;gap:4px;flex:none}
 .hp i{width:14px;height:22px;border-radius:5px;background:var(--orange);border:2px solid #fff;display:block;transition:opacity .3s,transform .3s}
+.hp i.heal{animation:heal .5s cubic-bezier(.3,1.8,.5,1)}
+@keyframes heal{0%{transform:scale(2);background:#7dffb0}}
 .hp i.lost{opacity:.2;transform:scale(.7) rotate(25deg)}
 .gauge{flex:1;display:flex;align-items:center;gap:6px;position:relative}
 .face{width:38px;height:38px;border-radius:50%;background:#2d6cdf;border:3px solid #fff;overflow:hidden;flex:none;position:relative}
@@ -373,6 +375,33 @@ function svgMetsuki(vb='0 0 200 220'){return `
 <path d="M87 136 Q100 132 113 137" stroke="${INK}" stroke-width="4" stroke-linecap="round" fill="none"/>
 </g></svg>`;}
 
+function svgFon(){return `<svg class="por p-fr" viewBox="0 0 200 220" aria-hidden="true"><g class="sway">
+<path d="M22 224 Q28 160 100 152 Q172 160 178 224 Z" fill="#f2b632" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>
+<path d="M60 160 Q100 190 140 160" fill="none" stroke="${INK}" stroke-width="3.5"/><path d="M88 170 v26 M112 170 v26" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+<g transform="translate(58 176) rotate(-6)"><rect x="0" y="0" width="84" height="50" rx="3" fill="#fff" stroke="${INK}" stroke-width="3.5"/><rect x="4" y="4" width="36" height="42" fill="#e8322f"/><rect x="44" y="4" width="36" height="42" fill="#3d8fc9"/><path d="M42 0 v50" stroke="${INK}" stroke-width="3"/><path d="M9 14 h26 M9 22 h18 M49 14 h26" stroke="#fff" stroke-width="3"/></g>
+<rect x="88" y="132" width="24" height="24" fill="${SKIN}" stroke="${INK}" stroke-width="4"/>
+<ellipse cx="54" cy="104" rx="8" ry="11" fill="${SKIN}" stroke="${INK}" stroke-width="4"/><ellipse cx="146" cy="104" rx="8" ry="11" fill="${SKIN}" stroke="${INK}" stroke-width="4"/>
+<ellipse cx="100" cy="100" rx="46" ry="50" fill="${SKIN}" stroke="${INK}" stroke-width="4"/>
+<path d="M52 96 Q46 50 100 44 Q156 48 150 98 Q146 80 132 74 L128 86 L118 72 L110 84 L100 70 L92 84 L82 72 L76 86 L68 76 Q58 84 52 96 Z" fill="#3b2a24" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+<path d="M70 102 Q80 98 90 102 M110 102 Q120 98 130 102" stroke="${INK}" stroke-width="4" stroke-linecap="round" fill="none"/>
+<path d="M72 106 Q80 110 88 106 M112 106 Q120 110 128 106" stroke="${INK}" stroke-width="3" stroke-linecap="round" fill="none"/>
+<path d="M90 128 Q100 134 110 128" stroke="${INK}" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+</g></svg>`;}
+function svgHase(){return `<svg class="por p-fr" viewBox="0 0 200 220" aria-hidden="true"><g class="sway">
+<path d="M20 224 Q26 158 100 150 Q174 158 180 224 Z" fill="#2c3550" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>
+<path d="M76 152 L100 196 L124 152 Z" fill="#fff" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M95 160 L105 160 L108 196 L100 206 L92 196 Z" fill="#c42a36" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+<path d="M76 152 L92 200 M124 152 L108 200" stroke="${INK}" stroke-width="3" fill="none"/>
+<rect x="88" y="130" width="24" height="24" fill="#eec8a0" stroke="${INK}" stroke-width="4"/>
+<ellipse cx="56" cy="102" rx="8" ry="11" fill="#eec8a0" stroke="${INK}" stroke-width="4"/><ellipse cx="144" cy="102" rx="8" ry="11" fill="#eec8a0" stroke="${INK}" stroke-width="4"/>
+<ellipse cx="100" cy="98" rx="44" ry="54" fill="#eec8a0" stroke="${INK}" stroke-width="4"/>
+<path d="M56 92 Q54 44 100 42 Q148 44 146 90 Q140 64 116 60 Q88 70 70 66 Q60 76 56 92 Z" fill="#5a5f6b" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+<path d="M92 62 Q100 54 112 58" stroke="#9aa0ad" stroke-width="2.5" fill="none"/>
+<path d="M72 88 h16 M112 88 h16" stroke="${INK}" stroke-width="3.5" stroke-linecap="round"/>
+<circle cx="80" cy="100" r="3.6" fill="${INK}"/><circle cx="120" cy="100" r="3.6" fill="${INK}"/>
+<path d="M84 124 Q92 118 100 122 Q108 118 116 124 Q108 128 100 125 Q92 128 84 124 Z" fill="#5a5f6b" stroke="${INK}" stroke-width="2"/>
+<path d="M94 136 h12" stroke="${INK}" stroke-width="3.5" stroke-linecap="round"/>
+</g></svg>`;}
 const FRIENDS=[{name:'あい',shirt:'#3f7fd9',rx:54,ry:48,hair:'cap'},{name:'いち',shirt:'#4caf7a',rx:42,ry:56,hair:'flat',glasses:1},{name:'たつ',shirt:'#9a5fd0',rx:46,ry:48,hair:'bowl',droop:1}];
 function svgFriend(i,vb='0 0 200 220'){const f=FRIENDS[i],cy=106,rx=f.rx,ry=f.ry;let hair='';
   if(f.hair==='flat')hair=`<path d="M${100-rx} ${cy-8} Q${100-rx-2} ${cy-ry-8} 100 ${cy-ry-10} Q${100+rx+2} ${cy-ry-8} ${100+rx} ${cy-8} Q100 ${cy-ry+14} ${100-rx} ${cy-8}Z" fill="#5a3a22" stroke="${INK}" stroke-width="3.5"/>`;
@@ -417,6 +446,7 @@ const SFX={on:load('dr_sound',true),ctx:null,eng:null,
     const l=c.createOscillator(),lg=c.createGain();l.frequency.value=22;lg.gain.value=18;l.connect(lg).connect(o.frequency);
     f.type='lowpass';f.frequency.value=420;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.35);g.gain.linearRampToValueAtTime(.16,t+.6);g.gain.exponentialRampToValueAtTime(.0001,t+.95);
     o.connect(f).connect(g).connect(c.destination);o.start(t);l.start(t);o.stop(t+1);l.stop(t+1);this.noise(.8,'bandpass',700,.08,.1);},
+  bell(){this.tone(784,.9,'sine',.16);this.tone(1568,.5,'sine',.03);this.tone(622,1.4,'sine',.16,.45);this.tone(1244,.8,'sine',.03,.45);},
   wow(){[660,880,1100].forEach((f,i)=>this.tone(f,.14,'triangle',.08,i*.06));},
   engineStart(){if(!this.on||this.eng)return;const c=this.ac();if(!c)return;const o=c.createOscillator(),o2=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();
     o.type='sawtooth';o2.type='square';o2.detune.value=-1200;f.type='lowpass';f.frequency.value=520;g.gain.value=0;o.connect(f);o2.connect(f);f.connect(g).connect(c.destination);o.start();o2.start();
@@ -426,7 +456,7 @@ const SFX={on:load('dr_sound',true),ctx:null,eng:null,
 };
 
 /* ================= VN ================= */
-const CAST={metsuki:{name:'目つきの悪いやつ',svg:svgMetsuki,p:.8},takashi:{name:'たかし',svg:()=>svgTakashi(),p:1.15},A:{name:'あい',svg:()=>svgFriend(0),p:1.25},B:{name:'いち',svg:()=>svgFriend(1),p:.9},C:{name:'たつ',svg:()=>svgFriend(2),p:1.05}};
+const CAST={metsuki:{name:'目つきの悪いやつ',svg:svgMetsuki,p:.8},takashi:{name:'たかし',svg:()=>svgTakashi(),p:1.15},A:{name:'あい',svg:()=>svgFriend(0),p:1.25},B:{name:'いち',svg:()=>svgFriend(1),p:.9},C:{name:'たつ',svg:()=>svgFriend(2),p:1.05},fon:{name:'フォン',svg:svgFon,p:1.1},hase:{name:'Mr.ハセ',svg:svgHase,p:.65}};
 const VN={el:null,resolve:null,lines:null,i:0,typing:false,full:'',timer:0,nodes:{}};
 function vnNode(c){if(!VN.nodes[c]){const d=document.createElement('div');d.className='vc hide';d.innerHTML=CAST[c].svg();$('#vnChars').appendChild(d);VN.nodes[c]=d;}return VN.nodes[c];}
 function runScript(lines,bg){
@@ -452,6 +482,7 @@ function vnLine(){
   const tk=VN.nodes.takashi&&VN.nodes.takashi.querySelector('svg');if(tk)tk.classList.remove('shriek');
   if(L.fx==='shriek'){if(tk)tk.classList.add('shriek');shout(L.t);SFX.shriek(L.small?.4:1);const v=$('#vn');v.classList.remove('quake');void v.offsetWidth;v.classList.add('quake');buzz(L.small?[40]:[80,40,120]);}
   if(L.call!==undefined)SFX.call(L.call);
+  if(L.fx==='bell'){SFX.bell();buzz([30,200,30]);}
   VN.full=L.t;VN.typing=true;const el=$('#vnText');el.textContent='';let k=0;const my=++VN.timer;
   const step=()=>{if(my!==VN.timer)return;if(k<VN.full.length){const ch=VN.full[k++];el.textContent+=ch;if(L.c!=='narr'&&!L.fx&&!/[、。！？…〜\s]/.test(ch)&&k%2)SFX.blip(CAST[L.c].p);setTimeout(step,/[、。]/.test(ch)?140:L.slow?120:42);}else VN.typing=false;};
   step();
@@ -477,6 +508,15 @@ const SCRIPT_TRIO=[
   {c:'narr',t:'…………',slow:1},
   {c:'A',t:'ポロン'},
   {c:'narr',t:'（3人は、特に何もしなかった）'}];
+const SCRIPT_FON=[
+  {c:'narr',show:[],t:'ピンポーン',fx:'bell',slow:1},
+  {c:'fon',show:['fon'],t:'マンガ読みに来た'},
+  {c:'narr',t:'（フォンはマンガを読みはじめた。ライフが1回復した）'}];
+const SCRIPT_HASE=[
+  {c:'narr',show:[],t:'ピンポーン',fx:'bell',slow:1},
+  {c:'hase',show:['hase'],t:'……',slow:1},
+  {c:'hase',t:'え？'},
+  {c:'narr',t:'（Mr.ハセの謎の力で、ライフが2回復した）'}];
 const END_LINES=['今日のたかしはご乱心','知ってた','たかしだから、しょうがない','車、泣いてるよ','今のは、たかしの我が勝った','おつかれ、たかし','ハンドル、逆に切ってたよ','また保険屋さん呼ぶの？'];
 function makeEnd(){
   const pool=[...END_LINES];
@@ -509,9 +549,11 @@ const ACH=[
  {id:'endu',sec:'演出',i:'💨',n:'ぶっちぎられ',d:'エンドゥに抜き去られた',h:'後ろに注意'},
  {id:'taiha',sec:'演出',i:'💥',n:'大破',d:'エンドゥが他の車を大破させた',h:'エンドゥの進路に車がいると…'},
  {id:'metsuki',sec:'演出',i:'🤨',n:'謎の停止',d:'目つきの悪いやつが路肩で止まった',h:'1300〜2800mのどこかで'},
- {id:'hata',sec:'演出',i:'🚨',n:'ハタ・チャン出現',d:'荒れ狂う運転に遭遇した',h:'長く走ると、たまに'},
+ {id:'hata',sec:'演出',i:'🚨',n:'ハタ・チャン出現',d:'荒れ狂う運転に遭遇した',h:'しばらく走ると'},
  {id:'hata_out',sec:'演出',i:'🌀',n:'ハタ・チャン退場',d:'奇声でハタ・チャンを吹き飛ばした',h:'暴れる車を、叫びで…'},
  {id:'roadside',sec:'演出',i:'👀',n:'路肩の3人',d:'路肩で3人に見送られた',h:'2400m以上走る'},
+ {id:'fon',sec:'演出',i:'📚',n:'マンガ読みに来た',d:'フォンが来て、ライフが1回復した',h:'ライフが残り1になると…'},
+ {id:'hase',sec:'演出',i:'🎩',n:'え？',d:'Mr.ハセが来て、ライフが2回復した',h:'ライフが残り1になると、まれに…'},
  {id:'crash',sec:'演出',i:'🚑',n:'事故現場',d:'3人が事故現場に集まった',h:'ゲームオーバーになる'},
  {id:'rank0',sec:'免許',i:'🪑',n:'助手席送り',d:'免許「助手席送り」を取った',h:'走る'},
  {id:'rank1',sec:'免許',i:'🔰',n:'若葉マーク',d:'800m以上走った',h:'800m'},
@@ -547,7 +589,7 @@ const G={state:'title',pl:null};
 function reset(){
   Object.assign(G,{t:0,speed:320,dist:0,score:0,hp:3,gauge:0,pending:-1,boost:0,inv:0,shrieks:0,nears:0,calls:0,combo:0,comboT:0,
     cars:[],decor:[],parts:[],pops:[],waves:[],cameos:[],spawnAcc:0,decorAcc:0,roadOff:0,shake:0,flash:0,hitstop:0,slow:0,
-    trioDone:false,nextCameo:2400,sportsOn:false,hintT:3.5,lineT:0,oils:[],drip:0,slowT:0,sp:[],ev:{mAt:R(1300,2800),mDone:false,endu:R(1000,1500),kando:R(500,800),hata:R(1800,2800)}});cutCD=0;$('#cutin').classList.remove('on');
+    trioDone:false,nextCameo:2400,sportsOn:false,hintT:3.5,lineT:0,oils:[],drip:0,slowT:0,rescued:{},rescuing:false,sp:[],ev:{mAt:R(1300,2800),mDone:false,endu:R(1000,1500),kando:R(500,800),hata:R(1000,1600),hataFirst:true}});cutCD=0;$('#cutin').classList.remove('on');
   G.pl={x:180,tx:180,y:VH*.8,w:34,h:60,tilt:0};
   for(let y=-40;y<VH+40;y+=90)spawnDecor(y);
 }
@@ -605,6 +647,7 @@ function hit(c){
   drawHP();
   G.oils.push({x:(c.x+G.pl.x)/2,y:G.pl.y,r:R(16,22)});G.drip=2.2;
   if(G.hp<=0){gameOver();return;}
+  checkRescue();
   tkSay(pick(TKL.hit));cutCD=0;setTimeout(()=>{if(G.state==='play')cutin(1,pick(['でちゃったねぇ','後垂れだね']));},500);
 }
 
@@ -695,6 +738,7 @@ function playerHit(o){
   G.hp--;G.inv=1.6;G.shake=16;G.combo=0;G.t=Math.max(0,G.t-4);SFX.crash();buzz(160);
   sparks((o.x+G.pl.x)/2,(o.y+G.pl.y)/2,'#ffd23f',18,320);G.oils.push({x:G.pl.x,y:G.pl.y,r:R(16,22)});G.drip=2.2;drawHP();
   if(G.hp<=0){gameOver();return true;}
+  checkRescue();
   tkSay(pick(TKL.hit));cutCD=0;setTimeout(()=>{if(G.state==='play')cutin(1,pick(['でちゃったねぇ','後垂れだね']));},500);
   return true;
 }
@@ -708,7 +752,7 @@ function specialEvents(){
   if(!E.mDone&&D>=E.mAt){E.mDone=true;spawnMetsuki();}
   if(D>=E.endu){E.endu=D+R(1100,1800);spawnEndu();}
   if(D>=E.kando){if(G.sp.some(o=>o.k==='hata'||o.k==='kando'))E.kando=D+150;else{E.kando=D+R(1200,2000);spawnKando();}}
-  if(D>=E.hata){if(G.sp.some(o=>o.k==='hata'||o.k==='kando'))E.hata=D+150;else{E.hata=D+R(1800,3000);if(Math.random()<.55)spawnHata();}}
+  if(D>=E.hata){if(G.sp.some(o=>o.k==='hata'||o.k==='kando'))E.hata=D+150;else{if(E.hataFirst||Math.random()<.55)spawnHata();E.hataFirst=false;E.hata=D+R(1500,2500);}}
 }
 function updateSpecials(dt){
   const P=G.pl;
@@ -904,6 +948,22 @@ async function trioEvent(){
   G.state='event';SFX.engineStop();drag=null;
   await runScript(SCRIPT_TRIO,'bg-over');unlock('trio');
   G.calls+=3;G.inv=Math.max(G.inv,1.2);
+  await countdown(['再発進！']);
+  if(G.state==='event'){G.state='play';SFX.engineStart();}
+}
+function checkRescue(){
+  if(G.hp!==1||G.rescuing)return;
+  const left=['fon','hase'].filter(k=>!G.rescued[k]);if(!left.length)return;
+  const first=!G.rescued.fon&&!G.rescued.hase;if(!first&&Math.random()<.5)return;
+  const who=left.length===2?(Math.random()<.7?'fon':'hase'):left[0];
+  G.rescuing=true;setTimeout(()=>{if(G.state==='play'&&G.hp===1)rescueEvent(who);else G.rescuing=false;},900);
+}
+async function rescueEvent(who){
+  G.state='event';SFX.engineStop();drag=null;G.rescued[who]=1;
+  await runScript(who==='fon'?SCRIPT_FON:SCRIPT_HASE,'bg-over');
+  const n=who==='fon'?1:2;G.hp=Math.min(3,G.hp+n);drawHP();[...$('#hp').children].forEach((e,i)=>{if(i<G.hp){e.classList.remove('heal');void e.offsetWidth;e.classList.add('heal');}});
+  unlock(who);G.inv=Math.max(G.inv,1.8);G.rescuing=false;
+  popup(G.pl.x,G.pl.y-70,`ライフ +${n}`,'#7dffb0',22);SFX.wow();
   await countdown(['再発進！']);
   if(G.state==='event'){G.state='play';SFX.engineStart();}
 }
