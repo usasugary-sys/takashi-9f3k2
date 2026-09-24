@@ -312,8 +312,8 @@ function svgTakashi(vb='0 0 200 220'){return `
  <path class="fx" d="M150 60 q6 10 0 16 q-6 -6 0 -16z" fill="#8fd3ff" stroke="${INK}" stroke-width="2"/>
 </g></g></svg>`;}
 
-function svgMetsuki(){return `
-<svg class="por p-mt" viewBox="0 0 200 220" aria-hidden="true"><g class="sway">
+function svgMetsuki(vb='0 0 200 220'){return `
+<svg class="por p-mt" viewBox="${vb}" aria-hidden="true"><g class="sway">
 <path d="M42 156 Q26 62 100 48 Q174 62 158 156 Z" fill="#2b2f3a" stroke="${INK}" stroke-width="4"/>
 <path d="M20 224 Q26 160 100 150 Q174 160 180 224 Z" fill="#3a3f4b" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>
 <path d="M86 160 v34 M114 160 v34" stroke="#e9e6dc" stroke-width="3" stroke-linecap="round"/><circle cx="86" cy="196" r="3" fill="#e9e6dc"/><circle cx="114" cy="196" r="3" fill="#e9e6dc"/>
@@ -365,6 +365,11 @@ const SFX={on:load('dr_sound',true),ctx:null,eng:null,
   near(){this.noise(.28,'bandpass',600,.35,0,3200);},
   call(i){const f=[520,420,640][i]||520;this.tone(f,.1,'triangle',.08);this.tone(f*.92,.1,'triangle',.08,.11);this.tone(f*1.04,.45,'triangle',.08,.22,f*.78);},
   count(){this.tone(880,.12,'square',.06);},go(){this.tone(1320,.35,'square',.06);this.tone(1760,.35,'square',.04,.05);},
+  scrape(){this.noise(1.4,'bandpass',2600,.35,0,900);this.tone(140,1.2,'sawtooth',.05,0,60);},
+  zoom(){this.tone(180,.7,'sawtooth',.07,0,1400);this.noise(.6,'bandpass',500,.3,0,4000);},
+  boing(){this.tone(170,.18,'sine',.25,0,560);this.tone(560,.3,'sine',.2,.16,240);},
+  horn(v=1){this.tone(440,.32,'square',.05*v);this.tone(554,.32,'square',.05*v);},
+  tam(){[988,1319,1568,1319].forEach((f,i)=>this.tone(f,.16,'triangle',.07,i*.09));},
   wow(){[660,880,1100].forEach((f,i)=>this.tone(f,.14,'triangle',.08,i*.06));},
   engineStart(){if(!this.on||this.eng)return;const c=this.ac();if(!c)return;const o=c.createOscillator(),o2=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();
     o.type='sawtooth';o2.type='square';o2.detune.value=-1200;f.type='lowpass';f.frequency.value=520;g.gain.value=0;o.connect(f);o2.connect(f);f.connect(g).connect(c.destination);o.start();o2.start();
@@ -463,7 +468,7 @@ const G={state:'title',pl:null};
 function reset(){
   Object.assign(G,{t:0,speed:320,dist:0,score:0,hp:3,gauge:0,pending:-1,boost:0,inv:0,shrieks:0,nears:0,calls:0,combo:0,comboT:0,
     cars:[],decor:[],parts:[],pops:[],waves:[],cameos:[],spawnAcc:0,decorAcc:0,roadOff:0,shake:0,flash:0,hitstop:0,slow:0,
-    trioDone:false,nextCameo:2400,sportsOn:false,hintT:3.5,lineT:0,oils:[],drip:0});cutCD=0;$('#cutin').classList.remove('on');
+    trioDone:false,nextCameo:2400,sportsOn:false,hintT:3.5,lineT:0,oils:[],drip:0,sp:[],ev:{mAt:R(1300,2800),mDone:false,endu:R(1000,1500),kando:R(500,800),hata:R(1800,2800)}});cutCD=0;$('#cutin').classList.remove('on');
   G.pl={x:180,tx:180,y:VH*.8,w:34,h:60,tilt:0};
   for(let y=-40;y<VH+40;y+=90)spawnDecor(y);
 }
@@ -479,7 +484,7 @@ window.addEventListener('keyup',e=>{keys[e.key]=false;});
 function clampX(x){return clamp(x,ROADL+G.pl.w/2+3,ROADL+ROADW-G.pl.w/2-3);}
 
 function spawnRow(){
-  const t=G.t,n=t<18?1:t<45?RI(1,2):RI(1,3);
+  const t=G.t,n=t<10?1:t<30?RI(1,2):(Math.random()<.7?RI(2,3):1);
   const lanes=[0,1,2,3].sort(()=>Math.random()-.5).filter(l=>!G.cars.some(c=>!c.dead&&Math.abs(c.x-laneX(l))<LW*.6&&c.y<90));
   for(let i=0;i<Math.min(n,lanes.length,3);i++){
     const l=lanes[i];let type='car';const r=Math.random();
@@ -488,7 +493,7 @@ function spawnRow(){
     const c={type,x:laneX(l),lane:l,w:type==='truck'?40:type==='sports'?32:34,h:type==='truck'?98:type==='sports'?58:60,col,rot:0,alpha:1,passed:false,dead:false,near:0,credited:false};
     c.y=-c.h;c.v=G.speed*(type==='sports'?.86:type==='truck'?R(.38,.44):R(.45,.58));
     if(type==='sports')G.sportsOn=true;
-    if(t>25&&type!=='sports'&&Math.random()<.2){const to=l===0?1:l===3?2:l+pick([-1,1]);c.lc={to,at:R(60,VH*.42),bt:0};}
+    if(t>15&&type!=='sports'&&Math.random()<.3){const to=l===0?1:l===3?2:l+pick([-1,1]);c.lc={to,at:R(60,VH*.42),bt:0};}
     G.cars.push(c);
   }
 }
@@ -499,9 +504,10 @@ function spawnDecor(y){
 function popup(x,y,text,color='#fff',size=18){G.pops.push({x,y,text,color,size,life:1});}
 function sparks(x,y,col,n=14,sp=260){for(let i=0;i<n;i++){const a=R(0,Math.PI*2),v=R(sp*.3,sp);G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:R(.4,.9),col,sz:R(2,5)});}}
 let cutT=0,cutCD=0;
-function cutin(i,text){if(cutCD>0)return;cutCD=3;const f=FRIENDS[i];$('#cutFace').innerHTML=svgFriend(i,'42 44 116 116');$('#cutName').textContent=f.name;$('#cutText').textContent=text;
+function cutin(i,text){if(cutCD>0)return;cutinRaw(FRIENDS[i].name,svgFriend(i,'42 44 116 116'),text,CAST['ABC'[i]].p);}
+function cutinRaw(name,svg,text,p=.8){cutCD=3;$('#cutFace').innerHTML=svg;$('#cutName').textContent=name;$('#cutText').textContent=text;
   const el=$('#cutin');el.classList.remove('on');void el.offsetWidth;el.classList.add('on');clearTimeout(cutT);cutT=setTimeout(()=>el.classList.remove('on'),1900);
-  const p=CAST['ABC'[i]].p;for(let k=0;k<Math.min(6,text.length);k++)SFX.tone(R(420,540)*p,.05,'square',.026,k*.06);}
+  for(let k=0;k<Math.min(6,text.length);k++)SFX.tone(R(420,540)*p,.05,'square',.026,k*.06);}
 function tkSay(t){const el=$('#tkline');el.textContent=t;el.classList.add('on');G.lineT=1.4;}
 function setFace(sh){const s=$('#face svg');if(s)s.classList.toggle('shriek',sh);}
 
@@ -513,6 +519,7 @@ function shriek(){
   const r=Math.random();setTimeout(()=>{if(G.state==='play'){cutCD=0;r<.5?cutin(2,'ｷｴｴｴｪｪｪｪｪｪ'):cutin(0,'ﾋｭｰﾀｶｼｨ!!');}},700);
 }
 function hit(c){
+  if(G.state!=='play')return;
   G.hp--;G.inv=1.6;G.shake=16;G.combo=0;G.t=Math.max(0,G.t-4);SFX.crash();buzz(160);
   sparks((c.x+G.pl.x)/2,(c.y+G.pl.y)/2,'#ffd23f',18,320);
   c.dead=true;const s=Math.sign(c.x-G.pl.x)||1;c.vx=s*300;c.vy=-120;c.spin=s*6;
@@ -526,12 +533,12 @@ function update(dt){
   if(G.hitstop>0){G.hitstop-=dt;return;}
   if(G.slow>0){dt*=.25;}
   const P=G.pl;G.t+=dt;
-  const base=Math.min(840,320+G.t*9);G.speed=base*(G.boost>0?1.35:1);
+  const base=Math.min(980,380+G.t*12);G.speed=base*(G.boost>0?1.35:1);
   G.dist+=G.speed*.25/3.6*dt;G.score+=G.speed*.25/3.6*dt*.5;
   if(keys.ArrowLeft)P.tx=clampX(P.tx-420*dt);if(keys.ArrowRight)P.tx=clampX(P.tx+420*dt);
   const px=P.x;P.x+=(P.tx-P.x)*Math.min(1,dt*14);P.tilt+=((P.x-px)/Math.max(dt,.001)*.0012-P.tilt)*Math.min(1,dt*10);P.tilt=clamp(P.tilt,-.35,.35);
   G.roadOff=(G.roadOff+G.speed*dt)%80;
-  if(G.t>2.2){G.spawnAcc+=G.speed*dt;const gap=Math.max(290,560-G.t*4.2);if(G.spawnAcc>gap){G.spawnAcc=0;spawnRow();}}
+  if(G.t>2.2){G.spawnAcc+=G.speed*dt;const gap=Math.max(260,480-G.t*5);if(G.spawnAcc>gap){G.spawnAcc=0;spawnRow();}}
   G.decorAcc+=G.speed*dt;if(G.decorAcc>90){G.decorAcc=0;spawnDecor(-40);}
   G.decor.forEach(d=>d.y+=G.speed*dt);G.decor=G.decor.filter(d=>d.y<VH+60);
   // cars
@@ -549,7 +556,7 @@ function update(dt){
   }
   G.cars=G.cars.filter(c=>{const keep=c.y<VH+140&&c.alpha>0;if(!keep&&c.type==='sports')G.sportsOn=false;return keep;});
   // waves
-  for(const w of G.waves){w.r+=900*dt;for(const c of G.cars){if(!c.dead&&Math.hypot(c.x-w.x,c.y-w.y)<w.r)blast(c,w);}}
+  for(const w of G.waves){w.r+=900*dt;for(const c of G.cars){if(!c.dead&&Math.hypot(c.x-w.x,c.y-w.y)<w.r)blast(c,w);}for(const o of G.sp){if(o.k==='hata'&&Math.hypot(o.x-w.x,o.y-w.y)<w.r)blowHata(o);if(o.k==='kando'&&Math.hypot(o.x-w.x,o.y-w.y)<w.r)o.wob=1;}}
   G.waves=G.waves.filter(w=>w.r<520);
   // gauge & shriek
   if(G.boost<=0)G.gauge=Math.min(100,G.gauge+dt*1.6);
@@ -566,11 +573,119 @@ function update(dt){
   if(G.trioDone&&G.dist>=G.nextCameo){G.nextCameo+=1600;G.cameos.push({side:Math.random()<.5?-1:1,y:-120,said:false,lines:[pick(['たかし〜','たかし〜','ポロン','ﾋｭｰﾀｶｼｨ!!']),pick(['たかし〜','たかし〜','ぴゅっぴゅ！']),pick(['たかし〜','たかし〜','ｷｴｴｴｪｪｪｪｪｪ'])]});}
   for(const k of G.cameos){k.y+=G.speed*dt;if(!k.said&&k.y>P.y-60){k.said=true;const n=k.lines.filter(x=>x==='たかし〜').length;G.calls+=n;if(n)popup(k.side<0?110:250,P.y-90,`「たかし〜」×${n}`,'#9fd3ff',16);SFX.call(RI(0,2));}}
   G.cameos=G.cameos.filter(k=>k.y<VH+120);
+  if(G.state==='play')specialEvents();
+  updateSpecials(dt);
   // particles/popups
   for(const p of G.parts){p.x+=p.vx*dt;p.y+=p.vy*dt+G.speed*dt*.3;p.vx*=.96;p.vy*=.96;p.life-=dt;}G.parts=G.parts.filter(p=>p.life>0);
   for(const p of G.pops){p.y-=40*dt;p.life-=dt*.9;}G.pops=G.pops.filter(p=>p.life>0);
   G.shake*=Math.pow(.02,dt);G.flash=Math.max(0,G.flash-dt*2.2);
   SFX.engineSet(G.speed,G.boost>0);
+}
+
+/* ---------- specials ---------- */
+function laneOf(x){return clamp(Math.floor((x-ROADL)/LW),0,3);}
+function spHit(o,w,h){const P=G.pl;return Math.abs(o.x-P.x)<(w+P.w)/2-5&&Math.abs(o.y-P.y)<(h+P.h)/2-6;}
+function playerHit(o){
+  if(G.state!=='play'||G.inv>0||G.boost>0)return false;
+  G.hp--;G.inv=1.6;G.shake=16;G.combo=0;G.t=Math.max(0,G.t-4);SFX.crash();buzz(160);
+  sparks((o.x+G.pl.x)/2,(o.y+G.pl.y)/2,'#ffd23f',18,320);G.oils.push({x:G.pl.x,y:G.pl.y,r:R(16,22)});G.drip=2.2;drawHP();
+  if(G.hp<=0){gameOver();return true;}
+  tkSay(pick(TKL.hit));cutCD=0;setTimeout(()=>{if(G.state==='play')cutin(1,pick(['でちゃったねぇ','後垂れだね']));},500);
+  return true;
+}
+function spawnMetsuki(){const pl=laneOf(G.pl.x);const l=pick([0,1,2,3].filter(x=>x!==pl));
+  G.sp.push({k:'metsuki',x:laneX(l),y:VH+80,w:34,h:60,v:G.speed*1.3,ph:'pass',t:0,rot:0,side:laneX(l)<VW/2?-1:1});}
+function spawnEndu(){G.sp.push({k:'endu',x:laneX(laneOf(G.pl.x)),y:VH+90,w:32,h:62,ph:'warn',t:0});SFX.tone(1200,.12,'square',.05);SFX.tone(1200,.12,'square',.05,.2);}
+function spawnKando(){const l=RI(0,2);G.sp.push({k:'kando',x:ROADL+LW*(l+1),y:-90,w:LW*2-10,h:84,t:0,hitDone:false,say:0,tam:Math.random()<.3?{ph:'wait',x:0,y:0,t:0}:null});G.spawnAcc=-260;}
+function spawnHata(){G.sp.push({k:'hata',x:VW/2,y:-80,w:34,h:60,t:0,ph:'rage',ox:R(0,6),hitCD:0,rot:0});G.spawnAcc=-200;SFX.horn();popup(VW/2,VH*.3,'ハタ・チャン出現！','#ff5bd1',22);}
+function specialEvents(){
+  const E=G.ev,D=G.dist;
+  if(!E.mDone&&D>=E.mAt){E.mDone=true;spawnMetsuki();}
+  if(D>=E.endu){E.endu=D+R(1100,1800);spawnEndu();}
+  if(D>=E.kando){E.kando=D+R(1200,2000);if(!G.sp.some(o=>o.k==='kando'))spawnKando();}
+  if(D>=E.hata){E.hata=D+R(1800,3000);if(Math.random()<.55&&!G.sp.some(o=>o.k==='hata'))spawnHata();}
+}
+function updateSpecials(dt){
+  const P=G.pl;
+  for(const o of G.sp){o.t+=dt;
+    if(o.k==='metsuki'){
+      if(o.ph==='pass'){o.y-=G.speed*.6*dt;if(o.y<VH*.34){o.ph='swerve';o.tx=o.side<0?ROADL+4:ROADL+ROADW-4;SFX.tone(320,.25,'square',.05,0,160);}}
+      else if(o.ph==='swerve'){o.y-=G.speed*.3*dt;o.x+=(o.tx-o.x)*Math.min(1,dt*5);o.rot=o.side*.28;if(Math.abs(o.x-o.tx)<3){o.ph='scrape';o.t=0;SFX.scrape();G.shake=Math.max(G.shake,5);}}
+      else if(o.ph==='scrape'){const f=Math.max(0,1-o.t/1.3);o.y-=G.speed*(.3*f-(1-f))*dt;o.rot=o.side*.14*f;
+        for(let i=0;i<2;i++)G.parts.push({x:o.x+o.side*o.w/2,y:o.y+R(-o.h/2,o.h/2),vx:-o.side*R(20,140),vy:R(60,200),life:R(.2,.5),col:pick(['#ffd23f','#ff9a3d','#fff']),sz:R(2,4)});
+        if(o.t>1.3){o.ph='stop';o.v=0;o.rot=0;cutCD=0;cutinRaw('目つきの悪いやつ',svgMetsuki('45 45 110 110'),'……',.8);}}
+      else o.y+=G.speed*dt;
+    }
+    else if(o.k==='endu'){
+      if(o.ph==='warn'){if(o.t>1.15){o.ph='go';SFX.zoom();}}
+      else{o.y-=G.speed*1.35*dt;G.parts.push({x:o.x+R(-8,8),y:o.y+o.h/2,vx:0,vy:R(200,400),life:.25,col:pick(['#7dffb0','#fff']),sz:R(2,3)});
+        if(!o.hit&&spHit(o,o.w,o.h)){o.hit=true;if(playerHit(o))return;}
+        if(!o.said&&o.y<P.y-50){o.said=true;popup(o.x,P.y-80,'ぶっちぎり！','#7dffb0',20);}
+        if(o.y<-160)o.gone=true;}
+    }
+    else if(o.k==='kando'){
+      o.y+=G.speed*dt;o.say-=dt;o.wob=Math.max(0,(o.wob||0)-dt*2);
+      const T=o.tam;
+      if(T){
+        if(T.ph==='wait'&&o.y>VH*.16){T.ph='walk';T.side=o.x<VW/2?-1:1;T.x=T.side<0?10:VW-10;}
+        if(T.ph==='walk'){T.y=o.y;const tx=o.x+T.side*(o.w/2+10);T.x+=(tx-T.x)*Math.min(1,dt*10);if(Math.abs(T.x-tx)<4){T.ph='grab';T.t=0;o.say=2;SFX.tam();popup(o.x,o.y-60,'もうカンドったら♪','#ff8fc8',17);}}
+        if(T.ph==='grab'){T.t+=dt;T.y=o.y;if(T.t>.2){const tx=T.side<0?-90:VW+90;o.x+=(tx-o.x)*Math.min(1,dt*3.2);T.x=o.x+T.side*(o.w/2+10);if(o.x<-70||o.x>VW+70)o.gone=true;}}
+      }
+      if(!o.hitDone&&spHit(o,o.w,o.h-10)){o.hitDone=true;o.wob=1;popup(o.x,o.y-30,'ボヨン','#ffd2e0',24);SFX.boing();if(playerHit(o))return;}
+    }
+    else if(o.k==='hata'){
+      if(o.ph==='rage'){o.v=G.speed*(.86+.32*Math.sin(o.t*1.4));o.y=Math.min(VH*.74,o.y+(G.speed-o.v)*dt+(o.y<VH*.28?G.speed*.6*dt:0));
+        o.x=clamp(ROADL+ROADW/2+Math.sin(o.t*2.1+o.ox)*105+Math.sin(o.t*5.7)*22,ROADL+o.w/2,ROADL+ROADW-o.w/2);o.rot=Math.cos(o.t*2.1+o.ox)*.38;
+        if(Math.random()<dt*.8)SFX.horn(.5);if(Math.random()<dt*6)G.parts.push({x:o.x,y:o.y+o.h/2,vx:R(-30,30),vy:R(80,160),life:.6,col:'rgba(200,200,210,.7)',sz:R(4,7)});
+        if(o.t>7.5)o.ph='leave';}
+      else if(o.ph==='leave'){o.y-=G.speed*.7*dt;o.rot=Math.sin(o.t*8)*.2;if(o.y<-140)o.gone=true;}
+      else{o.x+=o.vx*dt;o.y+=(o.vy+G.speed*.5)*dt;o.rot+=o.spin*dt;o.alpha=(o.alpha??1)-dt;if(o.alpha<=0)o.gone=true;}
+      o.hitCD-=dt;if(o.ph!=='blown'&&o.hitCD<=0&&spHit(o,o.w,o.h)){o.hitCD=1.5;if(G.boost>0)blowHata(o);else if(playerHit(o))return;}
+    }
+  }
+  G.sp=G.sp.filter(o=>!o.gone&&o.y<VH+170);
+}
+function blowHata(o){if(o.ph==='blown')return;o.ph='blown';const s=Math.sign(o.x-G.pl.x)||1;o.vx=s*600;o.vy=-200;o.spin=s*12;G.score+=500;popup(o.x,o.y,'ハタ・チャン退場 +500','#ff5bd1',17);SFX.crash();}
+function nameTag(x,y,t,bg='rgba(21,22,29,.85)'){ctx.font='900 9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(t).width+10;ctx.fillStyle=bg;rr(x-w/2,y-7,w,14,5);ctx.fill();ctx.fillStyle='#fff';ctx.fillText(t,x,y);}
+function speech(x,y,t){ctx.font='900 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(t).width+14;ctx.fillStyle='#fff';ctx.strokeStyle=INK;ctx.lineWidth=2;rr(x-w/2,y-11,w,22,8);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x-4,y+10);ctx.lineTo(x,y+17);ctx.lineTo(x+4,y+10);ctx.fill();ctx.fillStyle=INK;ctx.fillText(t,x,y);}
+function drawKando(o){
+  ctx.save();ctx.translate(o.x,o.y);const wb=1+Math.sin(G.t*30)*.08*(o.wob||0);ctx.scale(wb,2-wb);
+  const rx=o.w/2,ry=o.h/2;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(4,6,rx,ry,0,0,7);ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle=INK;ctx.fillStyle='#f4f1e8';ctx.beginPath();ctx.ellipse(8,0,rx-6,ry,0,0,7);ctx.fill();ctx.stroke();
+  const br=1+Math.sin(G.t*3)*.04;ctx.fillStyle='#f5cfa8';ctx.beginPath();ctx.ellipse(14,0,(rx-26)*br,ry*.55*br,0,0,7);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(14,0,2.5,0,7);ctx.fillStyle=INK;ctx.fill();
+  const hx=-rx+14;ctx.fillStyle='#f5cfa8';ctx.beginPath();ctx.arc(hx,0,22,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#2b2233';ctx.beginPath();ctx.arc(hx-4,0,22,Math.PI*.6,Math.PI*1.4);ctx.fill();
+  ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(hx+2,-9);ctx.quadraticCurveTo(hx+7,-5,hx+2,-3);ctx.moveTo(hx+2,3);ctx.quadraticCurveTo(hx+7,5,hx+2,9);ctx.stroke();
+  ctx.beginPath();ctx.arc(hx+13,0,3.5,0,7);ctx.fillStyle='#7a1d2b';ctx.fill();
+  ctx.fillStyle='#9fd3ff';ctx.beginPath();ctx.ellipse(hx+18,5,3,5,0,0,7);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='#fff';ctx.font='900 13px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';
+  for(let i=0;i<3;i++){const ph=(G.t*.8+i/3)%1;ctx.globalAlpha=1-ph;ctx.fillText('Z',o.x-o.w/2+20+ph*20+i*6,o.y-o.h/2-4-ph*26);}ctx.globalAlpha=1;
+  nameTag(o.x,o.y+o.h/2+10,'カンド');
+  const T=o.tam;if(T&&T.ph!=='wait'){const x=T.x,y=T.y;ctx.fillStyle='#ff8fc8';ctx.strokeStyle=INK;ctx.lineWidth=2;rr(x-8,y-2,16,20,5);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#f5cfa8';ctx.beginPath();ctx.arc(x,y-10,9,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#4a2a1a';ctx.beginPath();ctx.arc(x,y-19,5,0,7);ctx.fill();
+    ctx.fillStyle=INK;ctx.beginPath();ctx.arc(x-3,y-10,1.5,0,7);ctx.arc(x+3,y-10,1.5,0,7);ctx.fill();
+    nameTag(x,y+28,'タム','rgba(200,60,130,.9)');if(o.say>0)speech(clamp(x,70,VW-70),y-38,'もうカンドったら♪');}
+}
+function drawSpecials(layer){
+  for(const o of G.sp){
+    if(layer==='ground'){if(o.k==='kando')drawKando(o);continue;}
+    if(o.k==='metsuki'){drawCar({x:o.x,y:o.y,w:o.w,h:o.h,col:['#2e323d','#454b5a'],rot:o.rot,type:'car'},false);
+      ctx.fillStyle='#1d1f27';ctx.beginPath();ctx.arc(o.x,o.y-2,6.5,0,7);ctx.fill();nameTag(o.x,o.y-o.h/2-12,'目つきの悪いやつ');if(o.ph==='stop')speech(o.x,o.y-o.h/2-34,'……');}
+    else if(o.k==='endu'){
+      if(o.ph==='warn'){if((o.t*8|0)%2){ctx.fillStyle='#ff3044';ctx.beginPath();ctx.moveTo(o.x,VH-70);ctx.lineTo(o.x-16,VH-44);ctx.lineTo(o.x+16,VH-44);ctx.closePath();ctx.fill();}
+        nameTag(o.x,VH-30,'後ろからエンドゥ！','rgba(255,48,68,.9)');}
+      else{ctx.fillStyle='rgba(125,255,176,.35)';ctx.fillRect(o.x-o.w/2+4,o.y+o.h/2,o.w-8,90);
+        ctx.save();ctx.shadowColor='#7dffb0';ctx.shadowBlur=18;drawCar({x:o.x,y:o.y,w:o.w,h:o.h,col:['#15161d','#2a2d3a'],rot:0,type:'sports'},false);ctx.restore();
+        ctx.fillStyle='#7dffb0';ctx.fillRect(o.x-2,o.y-o.h/2+3,4,o.h-6);nameTag(o.x,o.y+o.h/2+12,'エンドゥ','rgba(20,120,70,.9)');}
+    }
+    else if(o.k==='hata'){ctx.globalAlpha=Math.max(0,o.alpha??1);drawCar({x:o.x,y:o.y,w:o.w,h:o.h,col:['#ffe14d','#fff08a'],rot:o.rot,type:'sports'},false);
+      ctx.fillStyle='#ff5bd1';ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);ctx.fillRect(-o.w/2+2,-6,o.w-4,5);ctx.restore();
+      nameTag(o.x,o.y-o.h/2-12,'ハタ・チャン','rgba(210,40,160,.9)');
+      if(o.ph==='rage'&&(o.t*3|0)%2){ctx.fillStyle='#ff3044';ctx.font='900 16px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.fillText('!!',o.x+o.w/2+10,o.y-o.h/2);}
+      ctx.globalAlpha=1;}
+  }
 }
 
 /* ---------- draw ---------- */
@@ -623,7 +738,9 @@ function draw(){
   if(G.boost>0){ctx.fillStyle='rgba(255,255,255,.35)';for(let i=0;i<14;i++){ctx.fillRect(R(ROADL,ROADL+ROADW),R(-40,VH),2,R(40,110));}}
   for(const o of G.oils){ctx.fillStyle='rgba(8,9,14,.85)';ctx.beginPath();ctx.ellipse(o.x,o.y,o.r,o.r*.62,0,0,7);ctx.ellipse(o.x+o.r*.6,o.y+o.r*.4,o.r*.45,o.r*.3,0,0,7);ctx.fill();ctx.fillStyle='rgba(120,90,200,.35)';ctx.beginPath();ctx.ellipse(o.x-o.r*.3,o.y-o.r*.15,o.r*.35,o.r*.15,-.3,0,7);ctx.fill();}
   G.decor.forEach(drawDecor);G.cameos.forEach(drawCameo);
+  drawSpecials('ground');
   G.cars.forEach(c=>drawCar(c,false));
+  drawSpecials('top');
   const P=G.pl;
   if(G.boost>0){ctx.save();ctx.globalAlpha=.55;for(let i=1;i<=4;i++){ctx.fillStyle=i%2?'#ff2e88':'#ffd23f';ctx.beginPath();ctx.ellipse(P.x+R(-3,3),P.y+P.h/2+8*i,9-i,10,0,0,7);ctx.fill();}ctx.restore();
     ctx.save();ctx.shadowColor='#ff2e88';ctx.shadowBlur=24;drawCar({...P,type:'player',col:['#ff7a1a','#ff9a4d'],rot:P.tilt},true);ctx.restore();}
